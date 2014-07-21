@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # ----------------------------------------------------------------------------- #
-#         File: bigrss.rb
+#         File: hackercli.rb 
 #  Description: reads Hacker News bigrss feed and prints out
 #               Also works with reddit's rss feed 
 #
@@ -16,7 +16,7 @@
 #      License: MIT
 #  Last update: 2014-07-21 17:50
 # ----------------------------------------------------------------------------- #
-#  bigrss.rb  Copyright (C) 2012-2014 j kepler
+#  hackercli.rb  Copyright (C) 2012-2014 j kepler
 
 require 'open-uri'
 require 'cgi'
