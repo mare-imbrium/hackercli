@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby -w
+#!/usr/bin/env ruby
 # ----------------------------------------------------------------------------- #
 #         File: bigrss.rb
 #  Description: reads Hacker News bigrss feed and prints out
@@ -8,10 +8,13 @@
 #               titles and connecting to the page. HN's rss does not provide any info
 #               such as points/age etc. Reddit provides a little more but has to be parsed.
 #
+#               Currently saves downloaded file as "last.rss" so you may rerun queries on it
+#               using the "-u" flag.
+#
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-07-20 - 11:37
 #      License: MIT
-#  Last update: 2014-07-20 20:37
+#  Last update: 2014-07-21 17:50
 # ----------------------------------------------------------------------------- #
 #  bigrss.rb  Copyright (C) 2012-2014 j kepler
 
@@ -37,7 +40,7 @@ class Bigrss
     content.gsub!('&#x27;',"'")
     content.gsub!('&#x34;','"')
     content = CGI.unescapeHTML(content)
-    File.open("t.rss","w") {|ff| ff.write(content) }
+    File.open("last.rss","w") {|ff| ff.write(content) }
     items = content.scan(/<item>(.*?)<\/item>/)
     items.each_with_index do |e,i|
       e = e.first
@@ -104,7 +107,8 @@ end
 
 
 
-if __FILE__ == $0
+#if __FILE__ == $0
+if true
   begin
     url = nil
     # http://www.ruby-doc.org/stdlib/libdoc/optparse/rdoc/classes/OptionParser.html
@@ -113,7 +117,7 @@ if __FILE__ == $0
     OptionParser.new do |opts|
       opts.banner = "Usage: #{$0} [options]"
 
-      opts.on("-v", "--[no-]verbose", "Run verbosely") do |v|
+      opts.on("-v", "--[no-]verbose", "Print description also") do |v|
         options[:verbose] = v
       end
       opts.on("-n N", "--limit", Integer, "limit to N stories") do |v|
@@ -129,7 +133,7 @@ if __FILE__ == $0
         options[:subreddit] = v
         url = "http://www.reddit.com/r/#{v}/.rss"
       end
-      opts.on("-u URL", String,"--url", "Get articles from URL") do |v|
+      opts.on("-u URL", String,"--url", "Get articles from URL/file") do |v|
         url = v
       end
     end.parse!
@@ -139,7 +143,6 @@ if __FILE__ == $0
 
     #filename=ARGV[0];
     url ||= "https://news.ycombinator.com/bigrss"
-    puts url
     options[:url] = url
     klass = Bigrss.new options
     arr = klass.run
@@ -151,9 +154,16 @@ if __FILE__ == $0
       if titles_only
         puts "#{e[:title]}"
       else
+        unless options[:verbose]
+          e.delete(:description)
+        end
+        if i == 0
+          s = e.keys.join(sep)
+          puts s
+        end
+        s = e.values.join(sep)
+        puts s
         #puts "#{e[:title]}#{sep}#{e[:url]}#{sep}#{e[:comments_url]}"
-        puts e.keys, e.values
-        puts
       end
     end
     #puts " testing block "
