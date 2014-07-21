@@ -6,11 +6,11 @@ provided. May be used as a filter for other commands.
 This is a single file and so may be placed anywhere in the path. Also, one may include it in a project
 and get the array of hashes for each article and use as per requirements.
 
-This is NOT dependent on any other gem as it uses and parses the simple RSS feed using +String.scan+ only.
+This is NOT dependent on any other gem as it uses and parses the simple RSS feed using `String.scan` only.
 
 The feed used for Hacker News is:
 
-    https://news.ycombinator.com/bigrss
+        https://news.ycombinator.com/bigrss
 
 The feed used for Reddit News is (replace ruby with any other subreddit):
 
@@ -18,12 +18,10 @@ The feed used for Reddit News is (replace ruby with any other subreddit):
 
 Please click these links and check if they are working if there is any problem.
 
-hackercli.rb --help
+        hackercli.rb --help
 
 
 ## Installation
-
-Or install it yourself as:
 
     $ gem install hackercli
 
@@ -31,14 +29,23 @@ Or install it yourself as:
 
     hackercli.rb --help
 
-To view hacker news titles and info.
+To view hacker news titles and urls
 
     hackercli.rb 
+
+Pipe to other commands (default separatar is a TAB)
+
+    hackercli.rb | cut -f1,2 | nl | sort -n -r
     
 
 To view only titles:
 
     hackercli.rb -t
+
+
+To view description column also (this is normally not printed since it can be long):
+
+    hackercli.rb -v
 
 To view reddit ruby:
 
@@ -64,7 +71,7 @@ the program.
 
 ### hacker-curse
 
-This uses nokogiri to parse the actual Hackernews (or reddit) page, and can print on the CLI as well as 
+hacker-curse uses nokogiri to parse the actual Hackernews (or reddit) page, and can print on the CLI as well as 
 be used as a library for another application. hacker-curse also provides a curses interface for viewing titles 
 and comments, and launching the article or comments page in the GUI browser.
 
