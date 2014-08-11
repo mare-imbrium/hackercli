@@ -8,8 +8,11 @@
 #               titles and connecting to the page. HN's rss does not provide any info
 #               such as points/age etc. Reddit provides a little more but has to be parsed.
 #
-#               Currently saves downloaded file as "last.rss" so you may rerun queries on it
+#               Currently saves downloaded file as "<forum>.rss" so you may rerun queries on it
 #               using the "-u" flag.
+#
+#               Caveats: fails if newlines in rss feed as in case of arstechnical
+#               We need to join the lines first so that scan can work
 #
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-07-20 - 11:37
@@ -31,16 +34,28 @@ class Bigrss
     #instance_eval &block if block_given?
   end
 
+  # # returns a hash containing :articles array, and one or two outer fields such as page_url and time
+  # returns an array containing a hash for each article
+  # The hash contains :title, :url, :comments_url and in some case :pubdata and comments_count
   def run
+    page = {}
+
     resp = []
     filename = @options[:url]
+    page[:page_url] = filename
+    now = Time.now
+    page[:create_time_seconds] = now.to_i
+    page[:create_time] = now.to_s
+    page[:articles] = resp
     f = open(filename)
-    content = f.read
+    outfile = @options[:subreddit] || "last"
+    # ars technical sends in new lines
+    content = f.read.delete("\n")
     content.gsub!('&#x2F;',"/")
     content.gsub!('&#x27;',"'")
     content.gsub!('&#x34;','"')
     content = CGI.unescapeHTML(content)
-    File.open("last.rss","w") {|ff| ff.write(content) }
+    File.open("#{outfile}.rss","w") {|ff| ff.write(content) }
     items = content.scan(/<item>(.*?)<\/item>/)
     items.each_with_index do |e,i|
       e = e.first
@@ -48,6 +63,8 @@ class Bigrss
       title = e.scan(/<title>(.*?)<\/title/).first.first
       h[:title] = title
       url = e.scan(/<link>(.*?)<\/link/).first.first
+      # in the case of hacker news this is the article url
+      # In the case of reddit, this is the comment url along with comment url
       h[:url] = url
       comment_url = ""
       # HN has comments links in a  tag
@@ -73,7 +90,7 @@ class Bigrss
       end
       #puts " #{title}#{sep}#{url}#{sep}#{comment_url}"
     end
-    return resp unless block_given?
+    return page unless block_given?
   end
   def extract_part e, tag, hash
     if e.index("<#{tag}>")
@@ -103,6 +120,12 @@ end
 
 
 
+def to_yml outfile, arr
+  require 'yaml'
+  File.open(outfile, 'w' ) do |f|
+    f << YAML::dump(arr)
+  end
+end
 
 
 
@@ -111,11 +134,40 @@ end
 if true
   begin
     url = nil
+    ymlfile = nil
     # http://www.ruby-doc.org/stdlib/libdoc/optparse/rdoc/classes/OptionParser.html
     require 'optparse'
     options = {}
+    appname = File.basename $0
     OptionParser.new do |opts|
-      opts.banner = "Usage: #{$0} [options]"
+      opts.banner = 
+        %Q{ 
+Usage: #{$0} [options]
+ Examples:
+  Display Hacker News titles and urls:
+    #{appname} 
+    #{appname} hacker
+  Display subreddits from reddit.com:
+    #{appname} programming
+    #{appname} ruby
+  Display info from other sites:
+    #{appname} ars                # index from arstechnica
+    #{appname} ars:software       # software from arstechnica
+    #{appname} ars:open-source    # open-source from arstechnica
+    #{appname} slashdot   
+  Display info from a saved rss file:
+    #{appname} -u ruby.rss
+  Save info from reddit ruby to a YML file:
+    #{appname} -y ruby.yml ruby
+  Display info from another url: 
+    #{appname} -u http://feeds.boingboing.net/boingboing/iBag
+    #{appname} -u http://www.lifehacker.co.in/rss_tag_section_feeds.cms?query=productivity
+    #{appname} -u http://rss.slashdot.org/Slashdot/slashdot
+    #{appname} -u http://feeds.arstechnica.com/arstechnica/open-source
+    #{appname} -u http://feeds.arstechnica.com/arstechnica/software
+    
+
+}
 
       opts.on("-v", "--[no-]verbose", "Print description also") do |v|
         options[:verbose] = v
@@ -129,10 +181,13 @@ if true
       opts.on("-d SEP", String,"--delimiter", "Delimit columns with SEP") do |v|
         options[:delimiter] = v
       end
-      opts.on("-s SUBREDDIT", String,"--subreddit", "Get articles from subreddit named SUBREDDIT") do |v|
-        options[:subreddit] = v
-        url = "http://www.reddit.com/r/#{v}/.rss"
+      opts.on("-y yml path", String,"--yml-path", "save as YML file") do |v|
+        ymlfile = v
       end
+      #opts.on("-s SUBREDDIT", String,"--subreddit", "Get articles from subreddit named SUBREDDIT") do |v|
+        #options[:subreddit] = v
+        #url = "http://www.reddit.com/r/#{v}/.rss"
+      #end
       opts.on("-u URL", String,"--url", "Get articles from URL/file") do |v|
         url = v
       end
@@ -141,11 +196,43 @@ if true
     #p options
     #p ARGV
 
-    #filename=ARGV[0];
-    url ||= "https://news.ycombinator.com/bigrss"
+    v = ARGV[0];
+    if v
+      case v
+      when "news", "hacker", "hn"
+        url = "https://news.ycombinator.com/bigrss"
+        options[:subreddit] = "hacker"
+      when "slashdot"
+        url = "http://rss.slashdot.org/Slashdot/slashdot"
+        options[:subreddit] = "slashdot"
+      when "ars"
+        url = "http://feeds.arstechnica.com/arstechnica/index"
+        options[:subreddit] = "arstechnica"
+      else
+        if v.index("ars:") == 0
+          subf = v.split(":")
+          url = "http://feeds.arstechnica.com/arstechnica/#{subf.last}"
+          options[:subreddit] = subf.join("_")
+        else
+          url = "http://www.reddit.com/r/#{v}/.rss" 
+          options[:subreddit] = v
+        end
+      end
+    end
+    unless url
+      url ||= "https://news.ycombinator.com/bigrss"
+      options[:subreddit] = "hacker"
+    end
+    #$stderr.puts "url is: #{url} "
+
     options[:url] = url
     klass = Bigrss.new options
-    arr = klass.run
+    page = klass.run
+    if ymlfile
+      to_yml ymlfile, page
+      exit
+    end
+    arr = page[:articles]
     titles_only = options[:titles]
     sep = options[:delimiter] || "\t"
     limit = options[:number] || arr.count
