@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-08-09 - 10:12
 #      License: MIT
-#  Last update: 2014-08-11 21:30
+#  Last update: 2014-08-12 17:38
 # ----------------------------------------------------------------------------- #
 #  hackman.rb  Copyright (C) 2012-2014 j kepler
 # encoding: utf-8
@@ -17,7 +17,7 @@ require 'canis/core/include/defaultfilerenderer'
 require 'canis/core/include/appmethods'
 
 # TODO : 
-#    - add to forum list, remove, save
+#    x add to forum list, remove, save
 #    - specify gui browser and text browser, and on commandline use same keys as corvus
 #    - create a class and put stuff in there, these methods are going into global, and can conflict
 #    - we should have same mechanism for key bindings as corvus, something that can even be loaded?
@@ -29,7 +29,7 @@ VERSION="0.0.2"
 COLOR_SCHEMES=[ 
   [20,19,17, 18, :white], # 0 band in header, 1 - menu bgcolor.  2 - bgcolor of main screen, 3 - status, 4 fg color body
   [17,19,18, 20, :white], # 0 band in header, 1 - menu bgcolor.  2 - bgcolor of main screen, 3 - status
-  [236,236,232, 234,:white], # 0 band in header, 1 - menu bgcolor.  2 - bgcolor of main screen, 3 - status
+  [236,236,0, 232,:white], # 0 band in header, 1 - menu bgcolor.  2 - bgcolor of main screen, 3 - status
   [236,236,244, 234, :black] # 0 band in header, 1 - menu bgcolor.  2 - bgcolor of main screen, 3 - status
 ]
 $color_scheme = COLOR_SCHEMES[0]
@@ -44,6 +44,22 @@ def choose_forum
   $current_forum = str
   forum = str
   get_data forum if forum
+end
+# add a forum at runtime, by default this will be a reddit subforum
+def add_forum forum=nil
+  unless forum
+    forum = get_string "Add a reddit subforum: "
+    return if forum.nil? or forum == ""
+  end
+  $forumlist << forum
+  get_data forum
+end
+def remove_forum forum=nil
+  unless forum
+    forum = display_list $forumlist, :title => "Select a forum"
+    return if forum.nil? or forum == ""
+  end
+  $forumlist.delete forum
 end
 def next_forum
   index = $forumlist.index($current_forum)
@@ -214,6 +230,8 @@ def main_menu
     :c => :color_scheme_select,
     :s => :sort_menu, 
     :F => :filter_menu,
+    :a => :add_forum,
+    :d => :remove_forum,
     :x => :extras
   }
   ch, binding = menu "Main Menu", h
