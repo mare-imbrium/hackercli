@@ -42,6 +42,7 @@ class Bigrss
 
     resp = []
     filename = @options[:url]
+    ymlpath = @options[:ymlpath]
     page[:page_url] = filename
     now = Time.now
     page[:create_time_seconds] = now.to_i
@@ -55,6 +56,8 @@ class Bigrss
     content.gsub!('&#x27;',"'")
     content.gsub!('&#x34;','"')
     content = CGI.unescapeHTML(content)
+    # next line dirties current dir, does not respect path of yml
+    outfile = File.join(ymlpath, outfile) if ymlpath
     File.open("#{outfile}.rss","w") {|ff| ff.write(content) }
     items = content.scan(/<item>(.*?)<\/item>/)
     items.each_with_index do |e,i|
@@ -183,6 +186,7 @@ Usage: #{$0} [options]
       end
       opts.on("-y yml path", String,"--yml-path", "save as YML file") do |v|
         ymlfile = v
+        options[:ymlpath] = File.dirname(v)
       end
       #opts.on("-s SUBREDDIT", String,"--subreddit", "Get articles from subreddit named SUBREDDIT") do |v|
         #options[:subreddit] = v
