@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-08-09 - 10:12
 #      License: MIT
-#  Last update: 2014-08-17 21:43
+#  Last update: 2014-09-02 20:59
 # ----------------------------------------------------------------------------- #
 #  hackman.rb  Copyright (C) 2012-2014 j kepler
 # encoding: utf-8
@@ -22,7 +22,7 @@ require 'canis/core/include/appmethods'
 #      this as a template for others.
 #    - make the menu a little more like the mc usermenu
 #    x change location of data cache, hacker-cli to also use the same for rss file saving
-#    - make color schemes into a hash 'name' => scheme, and each scheme should have named colors such as 
+#    x make color schemes into a hash 'name' => scheme, and each scheme should have named colors such as 
 #       header-bg, body-bg body-fg, status etc, so it is clear. load from config file so user can change.
 #    x maybe instead of diong each binding we should be ablde to pass a hash to form
 #       or give it a method which it will invoke to handle keys. Form or window may have a keyhandler ??
@@ -30,7 +30,7 @@ require 'canis/core/include/appmethods'
 #    x create a class and put stuff in there, these methods are going into global, and can conflict
 #    x put one url per lne of detail, put comments with comment url, and time with other.
 #    x fix update help_text
-#    - need to trap the output of hackercli in case of error.
+#    x need to trap the output of hackercli in case of error.
 #    x some case URL not showing in Open menu - maybe too large the window. check max size
 #    x add to forum list, remove, save
 #    - specify gui browser and text browser, and on commandline use same keys as corvus
@@ -57,6 +57,11 @@ module HackerCli
       @form = app.form
       @hash = nil
       @cache_path = "."
+      @toggle_titles_only = false
+      @toggle_offline = false
+      @logger = @app.logger
+
+      @fg = :white
       @_forumlist = %w{ hacker ruby programming scifi science haskell java scala cpp c_programming d_language golang vim emacs unix linux bash zsh commandline vimplugins python ars slashdot }
       @browser_mode = options[:browser_mode] || 'text'
       @browser_text = options[:browser_text] || 'elinks'
@@ -70,6 +75,7 @@ module HackerCli
       @color_scheme = @color_schemes.values.first
       @forumlist ||= (options[:list] || @_forumlist)
       handle_keys @binding
+      #form_bind @binding
       @cache_path = File.expand_path(@cache_path)
     end
     def config_read config_file=nil
@@ -136,14 +142,11 @@ module HackerCli
       "z" => "goto_article",
       "o" => "display_links",
       "<CR>" => "display_links",
+      "<C-f>" => "display_links",
       "<F2>" => "choose_forum"
     }
     end
 
-    @toggle_titles_only = false
-    @toggle_offline = true
-
-    @fg = :white
 
     # prompt user to select a forum, and fetch data for it.
     def choose_forum
@@ -206,7 +209,7 @@ module HackerCli
     # In some cases, we call this and then do a case statement on either key or binding.
     # @param String title
     # @param hash of keys and methods to call
-    # @return key pressed, and binding (if found, and responded)
+    # @return key pressed, and binding (if found, and responded). Can return NIL nil if esc pressed
     #
     def menu title, hash, config={}, &block
       raise ArgumentError, "Nil hash received by menu" unless hash
@@ -609,6 +612,7 @@ module HackerCli
       return (( now - f.mtime) < 7200)
     end
     def show_links art
+      return unless art
       links = {}
       keys = %w{a b c d e f}
       i = 0
@@ -622,6 +626,7 @@ module HackerCli
       #alert "is #{index}: #{art[:title]} #{ch}:#{binding} "
       app = @browser_text || "elinks"
       unless binding
+        return unless ch
         # it must be an upper case for GUI
         return unless ch == ch.upcase
         ch = ch.downcase
@@ -654,13 +659,13 @@ module HackerCli
     end
 
     # Should work on this as a means of binding each element of a hash into forms keymap.
-    # FIXME
-    def bind hash
-      raise "not used or completed"
+    # FIXME works except that multiplier not working ??
+    def form_bind hash
       hash.each_pair do |k, v|
         nk = key_to_i(k)
-        @form.bind_key(nk) { self.send(v) }
-        #FIXME
+        desc = "??"
+        desc = v if v.is_a? String or v.is_a? Symbol
+        @form.bind_key(nk, desc) { self.send(v) }
       end
     end
     # convert a key in the format to an int so it can be mapped using bind_key
@@ -670,19 +675,22 @@ module HackerCli
     # F1 .. F10
     # This does not take complex cases yet. It is a simplistic conversion.
     def key_to_i k
-      raise "not used or completed"
       if k.size == 1
         return k.getbyte(0)
       end
-      if k =~ /^M-/
-        ch = k[2]
+      if k =~ /^<M-/
+        ch = k[3]
         return 128 + ch.ord
-      elsif k =~ /^[Cc]-/
-        ch = k[2]
-        return ch.ord - "a".ord + 1
-      elsif k[0] == "F"
-        ch = k[1..-1]
+      elsif k == "<CR>"
+        return 13
+      elsif k =~ /^<[Cc]/
+        ch = k[3]
+        x = ch.ord - "a".ord + 1
+      elsif k[0,2] == "<F"
+        ch = k[2..-2]
         return 264 + ch.to_i
+      else
+        alert "not able to bind #{k}"
       end
 
     end
@@ -723,6 +731,8 @@ Usage: #{app} [options]
   # config file path
 end.parse!
 App.new do 
+  def logger; return @log; end
+  @log = create_logger "hacker.log"
   @h = Hackman.new self, options
   @color_scheme = @h.color_scheme
   @header = app_header "hackman #{VERSION}", :text_center => "RSS Reader", :name => "header",
@@ -798,7 +808,6 @@ App.new do
     @form.help_manager.help_text = help_text
 
   begin
-    $log = create_logger "hacker.log"
   stack :margin_top => 1, :margin_left => 0, :width => :expand , :height => FFI::NCurses.LINES-2 do
     tv = textpad :height_pc => 100, :width_pc => 100, :name => "tv", :suppress_borders => true,
       :bgcolor => @color_scheme[:body_bg], :color => 255, :attr => NORMAL
