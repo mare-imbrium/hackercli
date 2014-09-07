@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-08-09 - 10:12
 #      License: MIT
-#  Last update: 2014-09-02 20:59
+#  Last update: 2014-09-02 22:20
 # ----------------------------------------------------------------------------- #
 #  hackman.rb  Copyright (C) 2012-2014 j kepler
 # encoding: utf-8
@@ -736,7 +736,7 @@ App.new do
   @h = Hackman.new self, options
   @color_scheme = @h.color_scheme
   @header = app_header "hackman #{VERSION}", :text_center => "RSS Reader", :name => "header",
-    :text_right =>"Press =", :color => :white, :bgcolor => @color_scheme[:header_bg]
+    :text_right =>"Menu `", :color => :white, :bgcolor => @color_scheme[:header_bg]
   message "Press F10 (or qq) to exit, F1 Help, ` for Menu  "
 
 
