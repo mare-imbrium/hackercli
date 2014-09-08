@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-08-09 - 10:12
 #      License: MIT
-#  Last update: 2014-09-02 22:20
+#  Last update: 2014-09-08 19:45
 # ----------------------------------------------------------------------------- #
 #  hackman.rb  Copyright (C) 2012-2014 j kepler
 # encoding: utf-8
@@ -39,7 +39,7 @@ require 'canis/core/include/appmethods'
 #    ? multibuffers so user can backspace and do M-n etc
 #    
 module HackerCli
-  VERSION="0.0.2"
+  VERSION="0.0.3"
   CONFIG_FILE="~/.hackman.yml"
   # in grey version, cannot see the other links.
   OLDCOLOR_SCHEMES=[ 
