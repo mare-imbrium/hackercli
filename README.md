@@ -1,5 +1,9 @@
 # Hackercli
 
+UPDATE: 2016-03-19 - due to changes in reddits RSS and some changes in HackerNews, this was no longer working.
+I have modified the code so it works. I am now using nokogiri. However, I am still not getting comment url and comment count. Am working on this.
+
+
 Uses hacker news RSS (bigrss) and reddit news RSS to print titles, article url, comments url, and any other information
 provided. May be used as a filter for other commands.
 
@@ -7,6 +11,7 @@ This is a single file and so may be placed anywhere in the path. Also, one may i
 and get the array of hashes for each article and use as per requirements.
 
 This is NOT dependent on any other gem as it uses and parses the simple RSS feed using `String.scan` only.
+Update: Now depends on Nokogiri since changes have happened in reddit.
 
 The feed used for Hacker News is:
 
