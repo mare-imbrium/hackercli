@@ -5,7 +5,7 @@
 #       Author: j kepler  http://github.com/mare-imbrium/canis/
 #         Date: 2014-08-09 - 10:12
 #      License: MIT
-#  Last update: 2014-09-08 19:45
+#  Last update: 2016-03-19 00:01
 # ----------------------------------------------------------------------------- #
 #  hackman.rb  Copyright (C) 2012-2014 j kepler
 # encoding: utf-8
@@ -538,7 +538,7 @@ module HackerCli
         if !@toggle_titles_only
           line1 = []
           line2 = []
-          url = a[:article_url] || a[:url]
+          url = a[:article_url] || a[:url] || a[:link]
           line1 << url
           #l = "        %s | %s" % [url, a[:comments_url] ]
           line2 << a[:comments_url] if a[:comments_url]
