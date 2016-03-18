@@ -21,6 +21,7 @@
 # ----------------------------------------------------------------------------- #
 #  hackercli.rb  Copyright (C) 2012-2014 j kepler
 
+require 'nokogiri'
 require 'open-uri'
 require 'cgi'
 
@@ -59,40 +60,36 @@ class Bigrss
     # next line dirties current dir, does not respect path of yml
     outfile = File.join(ymlpath, outfile) if ymlpath
     File.open("#{outfile}.rss","w") {|ff| ff.write(content) }
-    items = content.scan(/<item>(.*?)<\/item>/)
-    items.each_with_index do |e,i|
-      e = e.first
-      h = {}
-      title = e.scan(/<title>(.*?)<\/title/).first.first
-      h[:title] = title
-      url = e.scan(/<link>(.*?)<\/link/).first.first
-      # in the case of hacker news this is the article url
-      # In the case of reddit, this is the comment url along with comment url
-      h[:url] = url
-      comment_url = ""
-      # HN has comments links in a  tag
-      c = e.scan(/<comments>(.*?)<\/comments/).first
-      comment_url = c.first if c
-      h[:comments_url] = comment_url
-      # reddit gives published date
-      if e.index("pubDate")
-        pubdate = e.scan(/<pubDate>(.*?)<\/pubDate/).first.first
-        h[:pubdate] = pubdate
-      end
-      # reddit rss does not have comments. link comes embedded inside description
-      s = extract_part e, "description", h
-      if s 
-        # for reddit
-        split_description s, h
-      end
-      if block_given?
-        yield title, url, comment_url
-      else
-        #resp << [title, url, comment_url]
-        resp << h
-      end
-      #puts " #{title}#{sep}#{url}#{sep}#{comment_url}"
+    cont = Nokogiri::XML(content)
+    items = cont.css("item")
+    if items.empty? 
+      items = cont.css("entry")
     end
+    raise ArgumentError, "Cannot locate item or entry in RSS feed" if items.empty?
+
+    items.each do |e|
+      h = {}
+      e.children.each do |c|
+        # if the text is nil (as in reddit for link and category, then try to get attribute
+        if c.text.nil? or c.text == ""
+          #h[c.name] = []
+          #c.attributes.each { |a|
+          #h[c.name] << c[a.first]
+          #}
+
+          x = c.attributes.first.first
+          h[c.name.downcase.to_sym] = c[x]
+          #h[c.name] = "XXXXX"
+        else
+          h[c.name.downcase.to_sym] = c.text
+        end
+      end
+      if h.key? :updated
+        h[:pubdate] = h.delete(:updated)
+      end
+      resp << h
+    end
+
     return page unless block_given?
   end
   def extract_part e, tag, hash
