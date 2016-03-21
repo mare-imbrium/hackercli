@@ -34,6 +34,15 @@ class Bigrss
     #@arg = arg
     #instance_eval &block if block_given?
   end
+  # clean the string of tabs and newlines.
+  # Slashdot was sending a title that had a newline and 3 tabs which messed with terminal table.
+  def clean str
+    if str
+      return str.gsub("\t"," ").gsub("\n"," ").strip
+    end
+    str
+  end
+
 
   # # returns a hash containing :articles array, and one or two outer fields such as page_url and time
   # returns an array containing a hash for each article
@@ -78,12 +87,33 @@ class Bigrss
           #}
 
           x = c.attributes.first.first
-          h[c.name.downcase.to_sym] = c[x]
+          h[c.name.downcase.to_sym] = clean(c[x])
           #h[c.name] = "XXXXX"
         else
-          h[c.name.downcase.to_sym] = c.text
+          h[c.name.downcase.to_sym] = clean(c.text)
         end
       end
+      if h[:url].nil? and h.key? :link
+        h[:url] = h[:link]
+      end
+      if h[:comments_url].nil? and h.key? :comments
+        h[:comments_url] = h[:comments]
+      end
+      # 2016-03-19 - reddit has the comment link in :link and the content link in span.
+      if h[:comments_url].nil? and h.key?(:link) and h[:link].index("comments")
+        h[:comments_url] = h[:link]
+        # we need to figure out the link -- currently now in <span>
+        # if we take just a then it is more open, but we get user link too
+        #links = item.css("span a")
+        links = e.css("a")
+        links.each do |l|
+          hr = l["href"]
+          next if hr.index("/user")
+          next if hr.index("/comments")
+          h[:url] = hr
+        end
+      end
+
       if h.key? :updated
         h[:pubdate] = h.delete(:updated)
       end
@@ -92,7 +122,7 @@ class Bigrss
 
     return page unless block_given?
   end
-  def extract_part e, tag, hash
+  def DEPRECATED_extract_part e, tag, hash
     if e.index("<#{tag}>")
       str = e.scan(/<#{tag}>(.*?)<\/#{tag}/).first.first
       hash[tag.to_sym] = str
@@ -102,7 +132,7 @@ class Bigrss
   end
 
   # more for the reddit rss which requires the description to be parsed for comments, article link 
-  def split_description s, h
+  def DEPRECATED_split_description s, h
     str = s.scan(/<a href="(.*?)">(.*?)<\/a>/)
     if str
       str.each do |e|
