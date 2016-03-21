@@ -1,7 +1,9 @@
 # Hackercli
 
 UPDATE: 2016-03-19 - due to changes in reddits RSS and some changes in HackerNews, this was no longer working.
-I have modified the code so it works. I am now using nokogiri. However, I am still not getting comment url and comment count. Am working on this.
+I have modified the code so it works. I am now using nokogiri. However, I am still not getting comment url and comment count. Am working on this. Actually, the feeds are not mentioning the comment counts, it seems.
+
+I can possibly do this using just the RSS stdlib. Lets see.
 
 
 Uses hacker news RSS (bigrss) and reddit news RSS to print titles, article url, comments url, and any other information
